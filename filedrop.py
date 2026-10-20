@@ -11,6 +11,7 @@ import os
 import re
 import secrets
 import socket
+import ssl
 import subprocess
 import sys
 import threading
@@ -22,6 +23,9 @@ from pathlib import Path
 # Nazvy AIRDROP_* / airdrop_folder.txt / Downloads\AirDrop su z verzii 1.x a stale funguju.
 PORT = int(os.environ.get("FILEDROP_PORT") or os.environ.get("AIRDROP_PORT") or "8765")
 BASE = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE))  # prenosny Python (._pth) nepridava priecinok skriptu automaticky
+import tlscert  # noqa: E402
+
 DEFAULT_DIR = Path.home() / "Downloads" / "FileDrop"
 LEGACY_DIR = Path.home() / "Downloads" / "AirDrop"
 
@@ -55,8 +59,9 @@ SAFE_OPEN = {
     ".pdf", ".txt", ".csv", ".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp",
 }
 PAGE_CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; "
+            "img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://{host}; "
             "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+CA_DER = b""  # certifikat lokalnej CA na instalaciu do iPhonu (prazdny = HTTPS nedostupne)
 
 for ext, ctype in ((".heic", "image/heic"), (".heif", "image/heif"), (".mov", "video/quicktime"),
                    (".mp4", "video/mp4"), (".js", "text/javascript"), (".webp", "image/webp")):
@@ -140,14 +145,39 @@ def resolve(box, name):
     return p
 
 
+class Server(ThreadingHTTPServer):
+    """HTTP aj HTTPS na jednom porte - sifrovane spojenie sa spozna podla prveho bajtu (TLS handshake)."""
+    daemon_threads = True
+    tls = None
+
+    def finish_request(self, request, client_address):
+        if self.tls:
+            try:
+                request.settimeout(15)
+                if request.recv(1, socket.MSG_PEEK) == b"\x16":
+                    request = self.tls.wrap_socket(request, server_side=True)
+                request.settimeout(None)
+            except OSError:  # aj ssl.SSLError, napr. iPhone este nedoveruje certifikatu
+                return
+        try:
+            self.RequestHandlerClass(request, client_address, self)
+        finally:
+            if isinstance(request, ssl.SSLSocket):
+                request.close()
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "FileDrop/1.2"
+    server_version = "FileDrop/1.3"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
         pass
 
     # --- pomocne ---------------------------------------------------------
+    @property
+    def secure(self):
+        return isinstance(self.connection, ssl.SSLSocket)
+
     @property
     def local(self):
         return self.client_address[0] in ("127.0.0.1", "::1")
@@ -244,20 +274,28 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/qrcode.min.js":
             return self.send(200, (BASE / "qrcode.min.js").read_bytes(), "text/javascript; charset=utf-8",
                              {"X-Content-Type-Options": "nosniff"})
+        if path == "/filedrop-ca.crt" and CA_DER:
+            # bez Content-Disposition -> Safari na iPhone ponukne instalaciu profilu
+            return self.send(200, CA_DER, "application/x-x509-ca-cert")
+        if path == "/ping":  # stranka cez HTTP tymto zisti, ci iPhone uz doveruje HTTPS
+            return self.send(204)
         if not self.authed(q):
             return self.send(403, "<meta name=viewport content='width=device-width'>"
                                   "<h2 style='font-family:sans-serif'>Naskenuj znovu QR kód z PC.<br>"
                                   "Scan the QR code on the PC again.</h2>",
                              "text/html; charset=utf-8")
         if path == "/":
-            headers = {"Content-Security-Policy": PAGE_CSP, "X-Frame-Options": "DENY",
-                       "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff"}
+            headers = {"Content-Security-Policy": PAGE_CSP.format(host=self.headers.get("Host", "")),
+                       "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
+                       "X-Content-Type-Options": "nosniff"}
             if not self.local:
-                headers["Set-Cookie"] = f"ad={TOKEN}; Path=/; Max-Age=31536000; SameSite=Strict; HttpOnly"
+                headers["Set-Cookie"] = (f"ad={TOKEN}; Path=/; Max-Age=31536000; SameSite=Strict; HttpOnly"
+                                         + ("; Secure" if self.secure else ""))
             html = (BASE / "index.html").read_bytes()
             return self.send(200, html, "text/html; charset=utf-8", headers)
         if path == "/api/state":
-            data = {"local": self.local, "outbox": listing("outbox")}
+            data = {"local": self.local, "outbox": listing("outbox"),
+                    "https": bool(CA_DER), "secure": self.secure}
             if self.local:
                 data["inbox"] = listing("inbox")
                 data["urls"] = [f"http://{ip}:{PORT}/?k={TOKEN}" for ip in lan_ips()]
@@ -347,7 +385,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global TOKEN
+    global TOKEN, CA_DER
     if DATA == DEFAULT_DIR and not DATA.exists() and LEGACY_DIR.is_dir():
         LEGACY_DIR.rename(DATA)  # presun z verzie 1.x
     old_outbox = DATA / "Na iPhone"  # nazov z predchadzajucej verzie
@@ -364,12 +402,19 @@ def main():
         stale.unlink(missing_ok=True)
     TOKEN = load_token()
     try:
-        srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+        srv = Server(("0.0.0.0", PORT), Handler)
     except OSError:
         print(f"Port {PORT} je obsadený - FileDrop už pravdepodobne beží.")
         webbrowser.open(f"http://localhost:{PORT}/")
         return
-    srv.daemon_threads = True
+    try:
+        cert, key, CA_DER = tlscert.ensure(DATA / ".certs", lan_ips(), socket.gethostname())
+        srv.tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        srv.tls.minimum_version = ssl.TLSVersion.TLSv1_2
+        srv.tls.load_cert_chain(cert, key)
+    except (OSError, ValueError, ssl.SSLError) as e:
+        srv.tls, CA_DER = None, b""
+        print(f"  HTTPS nie je dostupné / HTTPS unavailable: {e}")
     print("FileDrop pre Windows beží.")
     print(f"  Priečinok: {DATA}")
     for ip in lan_ips():

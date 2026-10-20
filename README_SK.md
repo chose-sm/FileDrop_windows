@@ -19,7 +19,7 @@ Ak nemáš nainštalovaný Python, stiahni si **[FileDrop-Windows.zip](https://g
 
 | Smer | Ako |
 |---|---|
-| PC → iPhone | Pretiahni súbory do okna na PC (alebo Ctrl+V). Na iPhone ich potom stiahneš cez **Stiahnuť** (uloží sa do Súborov), fotky a videá cez **Otvoriť** a podržanie prsta → **Pridať do Fotiek**. |
+| PC → iPhone | Pretiahni súbory do okna na PC (alebo Ctrl+V). Na iPhone ťukni na súbory, ktoré chceš (alebo **Vybrať všetko**), a na **Uložiť**, potom zvoľ **Uložiť obrázky** (do Fotiek) alebo **Uložiť do Súborov**. **Otvoriť** zobrazí súbor priamo v aplikácii; **‹ Späť** (alebo gesto zo strany) ťa vráti na zoznam. |
 | iPhone → PC | Ťukni na **Poslať do PC** a vyber fotky alebo súbory. |
 
 Súbory sú v priečinku FileDrop, predvolene `Stiahnuté\FileDrop` (presnú cestu vidíš hore v okne na PC):
@@ -36,6 +36,19 @@ D:\FileDrop
 
 Potom FileDrop reštartuj. Ak priečinok neexistuje, vytvorí sa automaticky.
 
+### Zabezpečené pripojenie (HTTPS) – ukladanie viacerých fotiek naraz
+
+iPhone dovolí webovej stránke uložiť viac súborov naraz (menu **Zdieľať** s možnosťami **Uložiť obrázky** / **Uložiť do Súborov**) len cez HTTPS. FileDrop si preto na PC vytvorí vlastnú malú certifikačnú autoritu a iPhone jej musí raz dôverovať. Aplikácia na mobile ukáže návod krok za krokom (tlačidlo **Nastaviť**):
+
+1. V **Safari** (nie z ikony na ploche) ťukni na **Stiahnuť certifikát** → **Povoliť**.
+2. **Nastavenia** → **Profil bol stiahnutý** → **Inštalovať**.
+3. **Nastavenia → Všeobecné → Informácie → Nastavenia dôveryhodnosti certifikátov** → zapni **FileDrop Local CA**.
+4. Vo FileDrope ťukni na **Skontrolovať**. Odteraz sa aplikácia na HTTPS prepne sama.
+
+Certifikát sa dá použiť len pre súkromné IP adresy domácich sietí (má *obmedzenie mien*), takže sa nedá zneužiť na napodobnenie iných webov, ani keby ho niekto ukradol z PC. Odstránenie: Nastavenia → Všeobecné → VPN a správa zariadení → FileDrop Local CA → Odstrániť profil. Súbory certifikátu sú v priečinku `.certs` v priečinku FileDrop.
+
+Bez certifikátu všetko ostatné funguje ďalej; **Uložiť** potom súbory stiahne do aplikácie Súbory po jednom.
+
 ## Nastavenia (premenné prostredia)
 
 - `FILEDROP_PORT` je port, predvolene `8765`.
@@ -44,7 +57,7 @@ Potom FileDrop reštartuj. Ak priečinok neexistuje, vytvorí sa automaticky.
 
 ## Bezpečnosť
 
-Prístup chráni náhodný kľúč v QR kóde, uložený v súbore `.token` v priečinku FileDrop. Keď ho zmažeš, vygeneruje sa nový a starý odkaz prestane fungovať. Prenos ide nešifrovane cez HTTP v lokálnej sieti, preto ho používaj len doma alebo na dôveryhodnej Wi-Fi.
+Prístup chráni náhodný kľúč v QR kóde, uložený v súbore `.token` v priečinku FileDrop. Keď ho zmažeš, vygeneruje sa nový a starý odkaz prestane fungovať. Keď mobil dôveruje certifikátu FileDropu (pozri *Zabezpečené pripojenie* vyššie), prenos je šifrovaný (HTTPS). Bez neho ide nešifrovane cez HTTP v lokálnej sieti, preto ho vtedy používaj len doma alebo na dôveryhodnej Wi-Fi.
 
 Ďalšia ochrana:
 - Webové stránky otvorené v prehliadači na PC nemôžu FileDrop ovládať (ochrana proti CSRF a DNS rebinding).

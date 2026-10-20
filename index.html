@@ -90,10 +90,52 @@
   #toast {
     position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px);
     background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 22px; font-size: 14px;
-    opacity: 0; transition: .25s; pointer-events: none; max-width: calc(100% - 32px);
+    opacity: 0; transition: .25s; pointer-events: none; max-width: calc(100% - 32px); z-index: 40;
   }
   #toast.show { opacity: 1; transform: translate(-50%, 0); }
   .offline { color: var(--danger); }
+  /* --- iPhone: výber, lišta, prehliadač --- */
+  .selectable .item { cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); flex: none;
+           display: flex; align-items: center; justify-content: center; transition: .15s; }
+  .item.sel { background: var(--drop); }
+  .item.sel .check { background: var(--accent); border-color: var(--accent); }
+  .item.sel .check::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0;
+                            transform: translateY(-1px) rotate(45deg); }
+  .selbar {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom));
+    width: min(560px, calc(100% - 32px)); background: var(--card); border-radius: 16px; z-index: 35;
+    box-shadow: 0 8px 30px rgba(0,0,0,.25); padding: 10px 10px 10px 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .selbar span { flex: 1; font-weight: 600; font-size: 15px; }
+  .btn:disabled { opacity: .5; }
+  body.hasbar main { padding-bottom: 110px; }
+  body.hasbar #toast { bottom: calc(90px + env(safe-area-inset-bottom)); }
+  body.noscroll { overflow: hidden; }
+  body.noscroll #selBar:not(.busy) { display: none; }
+  .overlay { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: flex; flex-direction: column; }
+  .vbar { display: flex; align-items: center; gap: 8px; background: var(--card); border-bottom: 1px solid var(--line);
+          padding: calc(8px + env(safe-area-inset-top)) 8px 8px; }
+  .vbar .btn.ghost { font-size: 17px; font-weight: 600; padding: 6px 8px; gap: 2px; }
+  .vname { flex: 1; min-width: 0; text-align: center; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vbody { flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center;
+           padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .vbody img, .vbody video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+  .vfile { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 100%; }
+  .vfile .name { white-space: normal; overflow-wrap: anywhere; }
+  .thumb.big { width: 96px; height: 96px; font-size: 18px; border-radius: 16px; background: var(--card); }
+  .doc { display: block; }
+  .doc > div { max-width: 560px; margin: 0 auto; }
+  .doc ol { padding-left: 22px; margin: 16px 0; }
+  .doc li { margin-bottom: 14px; }
+  .doc .btn { margin-top: 8px; }
+  .warn { background: rgba(255,159,10,.15); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+  .banner { margin-bottom: 20px; }
+  .banner strong { display: block; margin-bottom: 2px; }
+  .banner .actions { margin-top: 12px; gap: 8px; }
+  .rowbtns { display: flex; gap: 8px; margin-top: 8px; }
+  .btn.tint { background: var(--drop); color: var(--accent); }
+  .selectable .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -163,6 +205,13 @@
 
   <!-- ===== Režim iPhone ===== -->
   <div id="phone" hidden>
+    <div class="card banner" id="httpsBanner" hidden>
+      <div><strong data-i18n="httpsTitle"></strong><span class="sub" data-i18n="httpsText"></span></div>
+      <div class="actions">
+        <button class="btn small" id="httpsSetup" data-i18n="setup"></button>
+        <button class="btn ghost" id="httpsLater" data-i18n="later"></button>
+      </div>
+    </div>
     <section>
       <label class="btn big">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>
@@ -173,12 +222,49 @@
       <div class="list" id="phoneUploads" hidden style="margin-top:12px"></div>
     </section>
     <section>
-      <h2 data-i18n="fromPc"></h2>
+      <h2><span class="grow" data-i18n="fromPc"></span>
+        <button class="btn ghost" id="selectAll" hidden></button></h2>
       <div class="list" id="phoneList"></div>
-      <p class="hint" data-i18n-html="phoneSaveHint"></p>
+      <p class="hint" id="saveHint"></p>
+      <p class="hint" id="httpsLinkRow" hidden><button class="btn ghost" id="httpsLink" data-i18n="setupLink" style="padding:0"></button></p>
     </section>
   </div>
 </main>
+
+<div class="selbar" id="selBar" hidden>
+  <span id="selText"></span>
+  <button class="btn" id="selSave"></button>
+</div>
+
+<!-- prehliadač súboru (iPhone) -->
+<div class="overlay" id="viewer" hidden>
+  <div class="vbar">
+    <button class="btn ghost back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span data-i18n="back"></span></button>
+    <div class="vname" id="vName"></div>
+    <button class="btn small" id="vSave" data-i18n="save"></button>
+  </div>
+  <div class="vbody" id="vBody"></div>
+</div>
+
+<!-- návod na HTTPS (iPhone) -->
+<div class="overlay" id="setup" hidden>
+  <div class="vbar">
+    <button class="btn ghost back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span data-i18n="back"></span></button>
+    <div class="vname" data-i18n="setupTitle"></div>
+    <span style="width:70px"></span>
+  </div>
+  <div class="vbody doc"><div>
+    <p data-i18n="setupIntro"></p>
+    <p class="warn" id="setupSafari" data-i18n-html="setupStandalone" hidden></p>
+    <ol>
+      <li><span data-i18n-html="step1"></span><br><a class="btn small" href="/filedrop-ca.crt" data-i18n="downloadCert"></a></li>
+      <li data-i18n-html="step2"></li>
+      <li data-i18n-html="step3"></li>
+      <li><span data-i18n-html="step4"></span><br><button class="btn small" id="certCheck" data-i18n="check"></button></li>
+    </ol>
+    <p class="hint" data-i18n="setupNote"></p>
+  </div></div>
+</div>
 <div id="toast"></div>
 
 <script src="/qrcode.min.js"></script>
@@ -208,7 +294,36 @@
       sendToPc: 'Poslať do PC',
       phoneHint: 'Vyber fotky, videá alebo súbory. Uložia sa do priečinka FileDrop v PC.',
       fromPc: 'Z počítača',
-      phoneSaveHint: 'Fotku alebo video ulož do Fotiek: ťukni na <b>Otvoriť</b>, podrž prst na obrázku a zvoľ <b>Pridať do Fotiek</b>. Ostatné súbory sa cez <b>Stiahnuť</b> uložia do aplikácie Súbory.',
+      phoneSaveHint: 'Ťukni na súbory, ktoré chceš uložiť (alebo <b>Vybrať všetko</b>), a potom na <b>Uložiť</b>. V ponuke zvoľ <b>Uložiť obrázky</b> (do Fotiek) alebo <b>Uložiť do Súborov</b>.',
+      phoneSaveHintHttp: 'Ťukni na súbory, ktoré chceš uložiť (alebo <b>Vybrať všetko</b>), a potom na <b>Uložiť</b> – stiahnu sa do aplikácie Súbory. Na ukladanie viacerých fotiek naraz priamo do Fotiek zapni zabezpečené pripojenie.',
+      save: 'Uložiť',
+      saveN: n => `Uložiť (${n})`,
+      selectAll: 'Vybrať všetko',
+      selectNone: 'Zrušiť výber',
+      selected: n => `Vybrané: ${n}`,
+      preparing: (i, n) => `Pripravujem ${i}/${n}…`,
+      tapToSave: 'Pripravené – ťukni na Uložiť',
+      saveFailed: 'Uloženie sa nepodarilo.',
+      back: 'Späť',
+      openInBrowser: 'Otvoriť v Safari',
+      secureOn: 'zabezpečené',
+      httpsTitle: 'Ukladanie viacerých fotiek naraz',
+      httpsText: 'Vyžaduje jednorazové nastavenie zabezpečeného pripojenia (asi minúta).',
+      setup: 'Nastaviť',
+      later: 'Teraz nie',
+      setupLink: 'Zapnúť zabezpečené pripojenie (HTTPS)',
+      setupTitle: 'Zabezpečené pripojenie',
+      setupIntro: 'iPhone povolí ukladanie viacerých súborov naraz (do Fotiek aj do Súborov) len cez zabezpečené pripojenie HTTPS. Stačí raz nainštalovať certifikát FileDropu.',
+      setupStandalone: 'Tento návod otvor v <b>Safari</b>, nie z ikony na ploche – inak sa certifikát nestiahne.',
+      step1: 'Ťukni na tlačidlo a potvrď <b>Povoliť</b>, potom <b>Zavrieť</b>.',
+      downloadCert: 'Stiahnuť certifikát',
+      step2: 'Otvor <b>Nastavenia</b> → hore <b>Profil bol stiahnutý</b> (Profile Downloaded) → <b>Inštalovať</b> → zadaj kód → <b>Inštalovať</b>. Ak ho nevidíš: Nastavenia → Všeobecné → <b>VPN a správa zariadení</b>.',
+      step3: 'Nastavenia → Všeobecné → <b>Informácie</b> → úplne dole <b>Nastavenia dôveryhodnosti certifikátov</b> (Certificate Trust Settings) → zapni <b>FileDrop Local CA</b> → Pokračovať.',
+      step4: 'Vráť sa sem a ťukni na <b>Skontrolovať</b>.',
+      check: 'Skontrolovať',
+      checking: 'Kontrolujem…',
+      notYet: 'Zatiaľ nefunguje – skontroluj krok 3.',
+      setupNote: 'Certifikát platí len pre zariadenia v domácej sieti (súkromné IP adresy), takže sa nedá zneužiť na iné weby. Ak máš FileDrop na ploche, po zapnutí ho odstráň a pridaj znova.',
       today: 'dnes',
       waiting: 'Čaká…',
       of: 'z',
@@ -249,7 +364,36 @@
       sendToPc: 'Send to PC',
       phoneHint: 'Pick photos, videos or files. They are saved to the FileDrop folder on the PC.',
       fromPc: 'From the PC',
-      phoneSaveHint: 'To save a photo or video to Photos, tap <b>Open</b>, press and hold the image and choose <b>Add to Photos</b>. Other files are saved to the Files app via <b>Download</b>.',
+      phoneSaveHint: 'Tap the files you want to save (or <b>Select all</b>), then tap <b>Save</b>. In the menu choose <b>Save Images</b> (to Photos) or <b>Save to Files</b>.',
+      phoneSaveHintHttp: 'Tap the files you want to save (or <b>Select all</b>), then tap <b>Save</b> – they are downloaded to the Files app. To save several photos straight to Photos, turn on the secure connection.',
+      save: 'Save',
+      saveN: n => `Save (${n})`,
+      selectAll: 'Select all',
+      selectNone: 'Deselect all',
+      selected: n => `Selected: ${n}`,
+      preparing: (i, n) => `Preparing ${i}/${n}…`,
+      tapToSave: 'Ready – tap Save',
+      saveFailed: 'Saving failed.',
+      back: 'Back',
+      openInBrowser: 'Open in Safari',
+      secureOn: 'secure',
+      httpsTitle: 'Save many photos at once',
+      httpsText: 'Needs a one-time secure connection setup (about a minute).',
+      setup: 'Set up',
+      later: 'Not now',
+      setupLink: 'Turn on secure connection (HTTPS)',
+      setupTitle: 'Secure connection',
+      setupIntro: 'The iPhone only allows saving several files at once (to Photos or Files) over a secure HTTPS connection. You just need to install the FileDrop certificate once.',
+      setupStandalone: 'Open this guide in <b>Safari</b>, not from the Home Screen icon – otherwise the certificate will not download.',
+      step1: 'Tap the button and confirm <b>Allow</b>, then <b>Close</b>.',
+      downloadCert: 'Download certificate',
+      step2: 'Open <b>Settings</b> → <b>Profile Downloaded</b> at the top → <b>Install</b> → enter your passcode → <b>Install</b>. Not there? Settings → General → <b>VPN &amp; Device Management</b>.',
+      step3: 'Settings → General → <b>About</b> → at the bottom <b>Certificate Trust Settings</b> → turn on <b>FileDrop Local CA</b> → Continue.',
+      step4: 'Come back here and tap <b>Check</b>.',
+      check: 'Check',
+      checking: 'Checking…',
+      notYet: 'Not working yet – check step 3.',
+      setupNote: 'The certificate only works for devices in your home network (private IP addresses), so it cannot be misused for other websites. If FileDrop is on your Home Screen, remove it and add it again after switching.',
       today: 'today',
       waiting: 'Waiting…',
       of: 'of',
@@ -335,7 +479,7 @@
     const ext = (f.name.split('.').pop() || '').slice(0, 4);
     const th = el('div', { className: 'thumb' }, ext);
     if (f.type.startsWith('image/') && !/heic|heif/.test(f.type)) {
-      const img = el('img', { loading: 'lazy', alt: '', src: fileUrl(box, f.name) });
+      const img = el('img', { alt: '', src: fileUrl(box, f.name) });
       img.onload = () => { th.textContent = ''; th.append(img); };
     }
     return th;
@@ -470,17 +614,202 @@
   }
 
   // ---------- režim iPhone ----------
+  const selected = new Set();
+  let pending = null, saving = false, httpsOffered = false;
+
+  function canShare(files) {
+    try { return !!(navigator.canShare && navigator.canShare({ files })); } catch { return false; }
+  }
+  const shareSupported = () => canShare([new File(['x'], 'x.txt', { type: 'text/plain' })]);
+
   function initPhone() {
     $('phone').hidden = false;
     $('phoneFiles').onchange = e => { enqueue([...e.target.files], $('phoneUploads')); e.target.value = ''; };
+    $('selectAll').onclick = () => {
+      const all = selected.size === state.outbox.length;
+      selected.clear();
+      if (!all) state.outbox.forEach(f => selected.add(f.name));
+      renderPhone();
+    };
+    $('selSave').onclick = () => pending ? shareNow(pending)
+      : saveFiles(state.outbox.filter(f => selected.has(f.name)));
+    document.querySelectorAll('.overlay .back').forEach(b => { b.onclick = () => history.back(); });
+    window.addEventListener('popstate', hideOverlays);
+    $('httpsSetup').onclick = $('httpsLink').onclick = () => {
+      $('setupSafari').hidden = !navigator.standalone;
+      showOverlay('setup');
+    };
+    $('httpsLater').onclick = () => {
+      try { localStorage.setItem('filedrop-https-later', '1'); } catch {}
+      updateHttpsBanner();
+    };
+    $('certCheck').onclick = async () => {
+      const b = $('certCheck');
+      b.disabled = true;
+      b.textContent = t('checking');
+      if (await httpsReachable()) return location.replace(httpsUrl());
+      b.disabled = false;
+      b.textContent = t('check');
+      toast(t('notYet'));
+    };
+    checkHttps();
   }
+
   function renderPhone() {
-    renderList($('phoneList'), 'outbox', state.outbox, t('phoneEmpty'), f => {
-      const media = /^(image|video)\//.test(f.type);
-      return [
-        media ? el('a', { className: 'btn ghost', href: fileUrl('outbox', f.name), target: '_blank' }, t('open')) : null,
-        el('a', { className: 'btn small', href: fileUrl('outbox', f.name, true), download: f.name }, t('download'))];
-    });
+    const names = new Set(state.outbox.map(f => f.name));
+    for (const n of [...selected]) if (!names.has(n)) selected.delete(n);
+    const list = $('phoneList');
+    list.classList.toggle('selectable', state.outbox.length > 0);
+    list.replaceChildren(...(state.outbox.length ? state.outbox.map(f => {
+      const row = el('div', { className: 'item' + (selected.has(f.name) ? ' sel' : ''), on: { click: e => {
+        if (e.target.closest('.rowbtns')) return;
+        selected.has(f.name) ? selected.delete(f.name) : selected.add(f.name);
+        row.classList.toggle('sel', selected.has(f.name));
+        updateSelBar();
+      } } },
+        el('div', { className: 'check' }),
+        thumb('outbox', f),
+        el('div', { className: 'meta' },
+          el('div', { className: 'name', title: f.name }, f.name),
+          el('div', { className: 'sub' }, fmtSize(f.size) + ' · ' + fmtTime(f.time)),
+          el('div', { className: 'rowbtns' },
+            el('button', { className: 'btn small tint', on: { click: () => openViewer(f) } }, t('open')),
+            el('button', { className: 'btn small', on: { click: () => saveFiles([f]) } }, t('save')))));
+      return row;
+    }) : [el('div', { className: 'empty' }, t('phoneEmpty'))]));
+    $('selectAll').hidden = !state.outbox.length;
+    $('saveHint').innerHTML = t(shareSupported() ? 'phoneSaveHint' : 'phoneSaveHintHttp');
+    updateSelBar();
+    updateHttpsBanner();
+  }
+
+  // lišta dole: počet vybraných a tlačidlo Uložiť
+  function setBar(text, button, disabled) {
+    $('selBar').hidden = false;
+    $('selBar').classList.add('busy');
+    document.body.classList.add('hasbar');
+    $('selText').textContent = text;
+    $('selSave').textContent = button;
+    $('selSave').disabled = !!disabled;
+  }
+  function updateSelBar() {
+    const n = selected.size;
+    $('selectAll').textContent = state && n && n === state.outbox.length ? t('selectNone') : t('selectAll');
+    if (pending) return setBar(t('tapToSave'), t('save'));
+    if (saving) return;
+    $('selBar').classList.remove('busy');
+    $('selBar').hidden = n === 0;
+    document.body.classList.toggle('hasbar', n > 0);
+    $('selText').textContent = t('selected', n);
+    $('selSave').textContent = t('saveN', n);
+    $('selSave').disabled = false;
+  }
+
+  // uloženie: cez HTTPS menu Zdieľať (Fotky / Súbory), inak stiahnutie do Súborov
+  async function saveFiles(list) {
+    if (!list.length || saving) return;
+    saving = true;
+    pending = null;
+    try {
+      if (!shareSupported()) {
+        for (const f of list) await downloadFile(f);
+        return;
+      }
+      const files = [];
+      for (const [i, f] of list.entries()) {
+        setBar(t('preparing', i + 1, list.length), t('save'), true);
+        const r = await fetch(fileUrl('outbox', f.name), { cache: 'no-store' });
+        if (!r.ok) throw new Error(r.status);
+        files.push(new File([await r.blob()], f.name,
+          { type: f.type || 'application/octet-stream', lastModified: f.time * 1000 }));
+      }
+      if (!canShare(files)) {
+        for (const f of list) await downloadFile(f);
+        return;
+      }
+      saving = false;
+      await shareNow(files);
+    } catch {
+      toast(t('saveFailed'));
+    } finally {
+      saving = false;
+      updateSelBar();
+    }
+  }
+  async function shareNow(files) {
+    pending = null;
+    try {
+      await navigator.share({ files });
+      selected.clear();
+      renderPhone();
+    } catch (e) {
+      // iOS vyžaduje ťuknutie tesne pred zdieľaním; po dlhšej príprave treba ťuknúť ešte raz
+      if (e.name === 'NotAllowedError') pending = files;
+      else if (e.name !== 'AbortError') toast(t('saveFailed'));
+    }
+    updateSelBar();
+  }
+  async function downloadFile(f) {
+    const a = el('a', { href: fileUrl('outbox', f.name, true), download: f.name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  // prehliadač súboru so šípkou späť (funguje aj gesto zo strany)
+  function openViewer(f) {
+    const url = fileUrl('outbox', f.name);
+    let body;
+    if (f.type.startsWith('image/')) body = el('img', { src: url, alt: f.name });
+    else if (f.type.startsWith('video/')) body = el('video', { src: url, controls: true, playsInline: true, preload: 'metadata' });
+    else if (f.type.startsWith('audio/')) body = el('audio', { src: url, controls: true });
+    else body = el('div', { className: 'vfile' },
+      el('div', { className: 'thumb big' }, (f.name.split('.').pop() || '').slice(0, 4)),
+      el('div', { className: 'name' }, f.name),
+      el('div', { className: 'sub' }, fmtSize(f.size)),
+      el('a', { className: 'btn ghost', href: url, target: '_blank', rel: 'noopener' }, t('openInBrowser')));
+    $('vName').textContent = f.name;
+    $('vSave').onclick = () => saveFiles([f]);
+    $('vBody').replaceChildren(body);
+    showOverlay('viewer');
+  }
+  function showOverlay(id) {
+    $(id).hidden = false;
+    document.body.classList.add('noscroll');
+    history.pushState({ overlay: id }, '');
+  }
+  function hideOverlays() {
+    $('viewer').hidden = $('setup').hidden = true;
+    $('vBody').replaceChildren();
+    document.body.classList.remove('noscroll');
+  }
+
+  // HTTPS: ak iPhone už dôveruje certifikátu, prepni sa naň; inak ponúkni návod
+  const httpsUrl = () => `https://${location.host}${location.pathname}${location.search}`;
+  async function httpsReachable() {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 4000);
+    try {
+      await fetch(`https://${location.host}/ping`, { mode: 'no-cors', cache: 'no-store', signal: ctl.signal });
+      return true;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  async function checkHttps() {
+    if (location.protocol !== 'http:' || !state.https) return;
+    if (await httpsReachable()) return location.replace(httpsUrl());
+    httpsOffered = true;
+    updateHttpsBanner();
+  }
+  function updateHttpsBanner() {
+    let later = false;
+    try { later = localStorage.getItem('filedrop-https-later') === '1'; } catch {}
+    $('httpsBanner').hidden = !httpsOffered || later;
+    $('httpsLinkRow').hidden = !httpsOffered || !later;
   }
 
   // ---------- synchronizácia ----------
@@ -494,7 +823,8 @@
         state = JSON.parse(text);
         state.local ? initPc() : initPhone();
       }
-      $('status').textContent = state.local ? t('thisPc') + ' · ' + state.folder : t('connected');
+      $('status').textContent = state.local ? t('thisPc') + ' · ' + state.folder
+        : t('connected') + (state.secure ? ' · 🔒 ' + t('secureOn') : '');
       if (text === lastJson) return;
       lastJson = text;
       state = JSON.parse(text);

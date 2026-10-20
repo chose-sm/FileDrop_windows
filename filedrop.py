@@ -185,7 +185,7 @@ class Server(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "FileDrop/1.3.1"
+    server_version = "FileDrop/1.3.2"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):

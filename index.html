@@ -259,7 +259,15 @@
   <div class="vbar">
     <button class="btn ghost back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span data-i18n="back"></span></button>
     <div class="vname" data-i18n="setupTitle"></div>
-    <span style="width:70px"></span>
+    <label class="lang" title="Language">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>
+      </svg>
+      <select id="guideLang" aria-label="Language">
+        <option value="en">English</option>
+        <option value="sk">Slovenčina</option>
+      </select>
+    </label>
   </div>
   <div class="vbody doc"><div>
     <p data-i18n="setupIntro"></p>
@@ -442,14 +450,28 @@
   }
   let lang = loadLang();
   const t = (k, ...args) => { const v = STRINGS[lang][k]; return typeof v === 'function' ? v(...args) : v; };
+  let guideLang = 'en';  // návod na certifikát je predvolene po anglicky
+  try { if (STRINGS[localStorage.getItem('filedrop-guide-lang')]) guideLang = localStorage.getItem('filedrop-guide-lang'); } catch {}
+  const tg = k => STRINGS[guideLang][k];
 
   function applyLang() {
     document.documentElement.lang = lang;
     $('lang').value = lang;
-    document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
-    document.querySelectorAll('[data-i18n-html]').forEach(e => { e.innerHTML = t(e.dataset.i18nHtml); });
+    document.querySelectorAll('[data-i18n]').forEach(e => {
+      e.textContent = (e.closest('#setup') ? tg : t)(e.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(e => {
+      e.innerHTML = (e.closest('#setup') ? tg : t)(e.dataset.i18nHtml);
+    });
+    $('guideLang').value = guideLang;
+    $('setup').lang = guideLang;
     $('ipSel').title = t('netIface');
   }
+  $('guideLang').onchange = e => {
+    guideLang = e.target.value;
+    try { localStorage.setItem('filedrop-guide-lang', guideLang); } catch {}
+    applyLang();
+  };
   $('lang').onchange = e => {
     lang = e.target.value;
     try { localStorage.setItem('filedrop-lang', lang); } catch {}
@@ -663,11 +685,11 @@
     $('certCheck').onclick = async () => {
       const b = $('certCheck');
       b.disabled = true;
-      b.textContent = t('checking');
+      b.textContent = tg('checking');
       if (await httpsReachable()) return location.replace(httpsUrl());
       b.disabled = false;
-      b.textContent = t('check');
-      toast(t('notYet'));
+      b.textContent = tg('check');
+      toast(tg('notYet'));
     };
     checkHttps();
   }

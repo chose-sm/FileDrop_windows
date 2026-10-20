@@ -3,6 +3,8 @@
 Spusti:  python filedrop.py   (alebo dvojklik na start.bat)
 Na PC sa otvori prehliadac s QR kodom, iPhone ho naskenuje fotoaparatom.
 """
+import getpass
+import hashlib
 import http.cookies
 import ipaddress
 import json
@@ -62,6 +64,22 @@ PAGE_CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 's
             "img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://{host}; "
             "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 CA_DER = b""  # certifikat lokalnej CA na instalaciu do iPhonu (prazdny = HTTPS nedostupne)
+
+
+def fingerprint(der):
+    """SHA-256 odtlacok v tvare, aky ukazuje iPhone (AB CD EF ...)."""
+    return " ".join(f"{b:02X}" for b in hashlib.sha256(der).digest())
+
+
+def protect(path):
+    """Subor s tajomstvom (kluc CA, pristupovy kluc) smie citat len aktualny pouzivatel Windows."""
+    if os.name != "nt" or not path.exists():
+        return
+    try:
+        subprocess.run(["icacls", str(path), "/inheritance:r", "/grant:r", f"{getpass.getuser()}:F"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    except OSError:
+        pass  # napr. disk bez NTFS opravneni
 
 for ext, ctype in ((".heic", "image/heic"), (".heif", "image/heif"), (".mov", "video/quicktime"),
                    (".mp4", "video/mp4"), (".js", "text/javascript"), (".webp", "image/webp")):
@@ -167,7 +185,7 @@ class Server(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "FileDrop/1.3"
+    server_version = "FileDrop/1.3.1"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
@@ -300,6 +318,7 @@ class Handler(BaseHTTPRequestHandler):
                 data["inbox"] = listing("inbox")
                 data["urls"] = [f"http://{ip}:{PORT}/?k={TOKEN}" for ip in lan_ips()]
                 data["folder"] = str(DATA)
+                data["caFingerprint"] = fingerprint(CA_DER) if CA_DER else ""
             return self.send_json(data)
         m = re.match(r"^/f/(inbox|outbox)/(.+)$", path)
         if m:
@@ -415,8 +434,12 @@ def main():
     except (OSError, ValueError, ssl.SSLError) as e:
         srv.tls, CA_DER = None, b""
         print(f"  HTTPS nie je dostupné / HTTPS unavailable: {e}")
+    for secret in (DATA / ".token", DATA / ".certs" / "ca.key", DATA / ".certs" / "server.key"):
+        protect(secret)
     print("FileDrop pre Windows beží.")
     print(f"  Priečinok: {DATA}")
+    if CA_DER:
+        print(f"  Odtlačok certifikátu (SHA-256): {fingerprint(CA_DER)}")
     for ip in lan_ips():
         print(f"  Adresa pre iPhone: http://{ip}:{PORT}/?k={TOKEN}")
     print("  Ukonči Ctrl+C.\n")

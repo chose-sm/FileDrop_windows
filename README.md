@@ -41,11 +41,13 @@ Restart FileDrop. The folder is created automatically if it doesn't exist.
 The iPhone only allows a web page to save several files at once (the **Share** menu with **Save Images** / **Save to Files**) over HTTPS. FileDrop therefore creates its own small certificate authority on the PC, and the iPhone needs to trust it once. The app shows a step-by-step guide on the phone (**Set up** button):
 
 1. In **Safari** (not from the Home Screen icon), tap **Download certificate** → **Allow**.
-2. **Settings** → **Profile Downloaded** → **Install**.
+2. **Settings** → **Profile Downloaded** → **More Details** → check that the **SHA-256 fingerprint** matches the one shown on the PC (below the QR code, *Certificate fingerprint*) → back → **Install**.
 3. **Settings → General → About → Certificate Trust Settings** → turn on **FileDrop Local CA**.
 4. Back in FileDrop, tap **Check**. The app switches to HTTPS automatically from now on.
 
-The certificate can only be used for private IP addresses in home networks (it has *name constraints*), so it cannot be misused to impersonate other websites, even if someone stole it from the PC. To remove it: Settings → General → VPN & Device Management → FileDrop Local CA → Remove Profile. The certificate files are stored in the `.certs` folder inside the FileDrop folder.
+**Only install the certificate at home, on your own Wi-Fi, and only from your own computer. Never install a FileDrop certificate from someone else's PC.** Comparing the fingerprint makes sure nobody swapped the certificate during the download.
+
+The certificate can only be used for private IP addresses in home networks (it has *name constraints*), so it cannot be misused to impersonate other websites, even if someone stole it from the PC. To remove it: Settings → General → VPN & Device Management → FileDrop Local CA → Remove Profile. The certificate files are stored in the `.certs` folder inside the FileDrop folder; the private keys (and the access key `.token`) can only be read by your Windows user account.
 
 Without the certificate everything else keeps working; **Save** then downloads the files to the Files app one by one.
 

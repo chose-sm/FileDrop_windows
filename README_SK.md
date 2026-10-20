@@ -41,11 +41,13 @@ Potom FileDrop reštartuj. Ak priečinok neexistuje, vytvorí sa automaticky.
 iPhone dovolí webovej stránke uložiť viac súborov naraz (menu **Zdieľať** s možnosťami **Uložiť obrázky** / **Uložiť do Súborov**) len cez HTTPS. FileDrop si preto na PC vytvorí vlastnú malú certifikačnú autoritu a iPhone jej musí raz dôverovať. Aplikácia na mobile ukáže návod krok za krokom (tlačidlo **Nastaviť**):
 
 1. V **Safari** (nie z ikony na ploche) ťukni na **Stiahnuť certifikát** → **Povoliť**.
-2. **Nastavenia** → **Profil bol stiahnutý** → **Inštalovať**.
+2. **Nastavenia** → **Profil bol stiahnutý** → **Ďalšie podrobnosti** → over, že **odtlačok SHA-256** sa zhoduje s odtlačkom na PC (pod QR kódom, *Odtlačok certifikátu*) → späť → **Inštalovať**.
 3. **Nastavenia → Všeobecné → Informácie → Nastavenia dôveryhodnosti certifikátov** → zapni **FileDrop Local CA**.
 4. Vo FileDrope ťukni na **Skontrolovať**. Odteraz sa aplikácia na HTTPS prepne sama.
 
-Certifikát sa dá použiť len pre súkromné IP adresy domácich sietí (má *obmedzenie mien*), takže sa nedá zneužiť na napodobnenie iných webov, ani keby ho niekto ukradol z PC. Odstránenie: Nastavenia → Všeobecné → VPN a správa zariadení → FileDrop Local CA → Odstrániť profil. Súbory certifikátu sú v priečinku `.certs` v priečinku FileDrop.
+**Certifikát inštaluj len doma, na vlastnej Wi-Fi, a len z vlastného počítača. Nikdy neinštaluj certifikát FileDropu z cudzieho PC.** Porovnanie odtlačku zaručí, že certifikát pri sťahovaní nikto nevymenil.
+
+Certifikát sa dá použiť len pre súkromné IP adresy domácich sietí (má *obmedzenie mien*), takže sa nedá zneužiť na napodobnenie iných webov, ani keby ho niekto ukradol z PC. Odstránenie: Nastavenia → Všeobecné → VPN a správa zariadení → FileDrop Local CA → Odstrániť profil. Súbory certifikátu sú v priečinku `.certs` v priečinku FileDrop; súkromné kľúče (aj prístupový kľúč `.token`) môže čítať len tvoj používateľský účet Windows.
 
 Bez certifikátu všetko ostatné funguje ďalej; **Uložiť** potom súbory stiahne do aplikácie Súbory po jednom.
 

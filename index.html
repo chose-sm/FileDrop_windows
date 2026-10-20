@@ -129,6 +129,9 @@
   .doc ol { padding-left: 22px; margin: 16px 0; }
   .doc li { margin-bottom: 14px; }
   .doc .btn { margin-top: 8px; }
+  .fp { width: 100%; text-align: left; font-size: 13px; }
+  .fp summary { cursor: pointer; color: var(--accent); text-align: center; }
+  .fp .url { margin: 8px 0 4px; line-height: 1.6; }
   .warn { background: rgba(255,159,10,.15); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
   .banner { margin-bottom: 20px; }
   .banner strong { display: block; margin-bottom: 2px; }
@@ -177,6 +180,11 @@
         </div>
         <select id="ipSel" hidden></select>
         <div class="url" id="url"></div>
+        <details class="fp" id="fpBox" hidden>
+          <summary data-i18n="fpTitle"></summary>
+          <div class="url" id="fp"></div>
+          <div class="sub" data-i18n="fpHint"></div>
+        </details>
       </div>
       <p class="hint" data-i18n-html="homeTip"></p>
     </div>
@@ -255,6 +263,7 @@
   </div>
   <div class="vbody doc"><div>
     <p data-i18n="setupIntro"></p>
+    <p class="warn" data-i18n-html="setupSafety"></p>
     <p class="warn" id="setupSafari" data-i18n-html="setupStandalone" hidden></p>
     <ol>
       <li><span data-i18n-html="step1"></span><br><a class="btn small" href="/filedrop-ca.crt" data-i18n="downloadCert"></a></li>
@@ -312,12 +321,15 @@
       setup: 'Nastaviť',
       later: 'Teraz nie',
       setupLink: 'Zapnúť zabezpečené pripojenie (HTTPS)',
+      setupSafety: '<b>Certifikát inštaluj len doma, na vlastnej Wi-Fi, a len z vlastného počítača.</b> Nikdy neinštaluj certifikát FileDropu z cudzieho PC.',
+      fpTitle: 'Odtlačok certifikátu (SHA-256)',
+      fpHint: 'Pri inštalácii na iPhone ho porovnaj v Ďalších podrobnostiach – musí sa zhodovať.',
       setupTitle: 'Zabezpečené pripojenie',
       setupIntro: 'iPhone povolí ukladanie viacerých súborov naraz (do Fotiek aj do Súborov) len cez zabezpečené pripojenie HTTPS. Stačí raz nainštalovať certifikát FileDropu.',
       setupStandalone: 'Tento návod otvor v <b>Safari</b>, nie z ikony na ploche – inak sa certifikát nestiahne.',
       step1: 'Ťukni na tlačidlo a potvrď <b>Povoliť</b>, potom <b>Zavrieť</b>.',
       downloadCert: 'Stiahnuť certifikát',
-      step2: 'Otvor <b>Nastavenia</b> → hore <b>Profil bol stiahnutý</b> (Profile Downloaded) → <b>Inštalovať</b> → zadaj kód → <b>Inštalovať</b>. Ak ho nevidíš: Nastavenia → Všeobecné → <b>VPN a správa zariadení</b>.',
+      step2: 'Otvor <b>Nastavenia</b> → hore <b>Profil bol stiahnutý</b> (Profile Downloaded). Najprv ťukni na <b>Ďalšie podrobnosti</b> → certifikát a over, že <b>odtlačok SHA-256</b> je rovnaký ako na obrazovke PC (pod QR kódom). Ak áno, vráť sa a ťukni na <b>Inštalovať</b> → zadaj kód → <b>Inštalovať</b>. Ak sa líši, neinštaluj ho. Profil nevidíš? Nastavenia → Všeobecné → <b>VPN a správa zariadení</b>.',
       step3: 'Nastavenia → Všeobecné → <b>Informácie</b> → úplne dole <b>Nastavenia dôveryhodnosti certifikátov</b> (Certificate Trust Settings) → zapni <b>FileDrop Local CA</b> → Pokračovať.',
       step4: 'Vráť sa sem a ťukni na <b>Skontrolovať</b>.',
       check: 'Skontrolovať',
@@ -382,12 +394,15 @@
       setup: 'Set up',
       later: 'Not now',
       setupLink: 'Turn on secure connection (HTTPS)',
+      setupSafety: '<b>Only install the certificate at home, on your own Wi-Fi, and only from your own computer.</b> Never install a FileDrop certificate from someone else\'s PC.',
+      fpTitle: 'Certificate fingerprint (SHA-256)',
+      fpHint: 'When installing on the iPhone, compare it under More Details – it must match.',
       setupTitle: 'Secure connection',
       setupIntro: 'The iPhone only allows saving several files at once (to Photos or Files) over a secure HTTPS connection. You just need to install the FileDrop certificate once.',
       setupStandalone: 'Open this guide in <b>Safari</b>, not from the Home Screen icon – otherwise the certificate will not download.',
       step1: 'Tap the button and confirm <b>Allow</b>, then <b>Close</b>.',
       downloadCert: 'Download certificate',
-      step2: 'Open <b>Settings</b> → <b>Profile Downloaded</b> at the top → <b>Install</b> → enter your passcode → <b>Install</b>. Not there? Settings → General → <b>VPN &amp; Device Management</b>.',
+      step2: 'Open <b>Settings</b> → <b>Profile Downloaded</b> at the top. First tap <b>More Details</b> → the certificate and check that the <b>SHA-256 fingerprint</b> matches the one on the PC screen (below the QR code). If it does, go back and tap <b>Install</b> → enter your passcode → <b>Install</b>. If it differs, do not install it. Profile not there? Settings → General → <b>VPN &amp; Device Management</b>.',
       step3: 'Settings → General → <b>About</b> → at the bottom <b>Certificate Trust Settings</b> → turn on <b>FileDrop Local CA</b> → Continue.',
       step4: 'Come back here and tap <b>Check</b>.',
       check: 'Check',
@@ -594,6 +609,8 @@
       sel.value = chosenUrl;
       drawQr();
     }
+    $('fpBox').hidden = !state.caFingerprint;
+    $('fp').textContent = state.caFingerprint || '';
     $('clearOut').hidden = !state.outbox.length;
     renderList($('outList'), 'outbox', state.outbox, t('outEmpty'), f => [
       el('button', { className: 'btn ghost red', on: { click: async () => {

@@ -46,6 +46,12 @@ Potom AirDrop reštartuj. Ak priečinok neexistuje, vytvorí sa automaticky.
 
 Prístup chráni náhodný kľúč v QR kóde, uložený v súbore `.token` v priečinku AirDrop. Keď ho zmažeš, vygeneruje sa nový a starý odkaz prestane fungovať. Prenos ide nešifrovane cez HTTP v lokálnej sieti, preto ho používaj len doma alebo na dôveryhodnej Wi-Fi.
 
+Ďalšia ochrana:
+- Webové stránky otvorené v prehliadači na PC nemôžu AirDrop ovládať (ochrana proti CSRF a DNS rebinding).
+- Súbory prijaté z mobilu sú označené ako stiahnuté z internetu, takže Windows pred ich otvorením varuje. Spustiteľné súbory (`.exe`, `.bat`, `.ps1`, …) tlačidlo **Otvoriť** nikdy nespustí, len ich označí v Prieskumníkovi.
+- Prenášané súbory sa zobrazujú v izolovanom režime (sandbox), takže HTML alebo SVG súbor nemôže v aplikácii spustiť skript.
+- Všetky časti aplikácie vrátane knižnice pre QR kód sú priložené; nič sa nenačítava z internetu.
+
 ## Riešenie problémov
 
 - **iPhone sa nepripojí:** obe zariadenia musia byť na rovnakej Wi-Fi a sieť vo Windows musí byť nastavená ako *Súkromná*. Pravidlo firewallu môžeš pridať aj ručne (PowerShell ako správca):

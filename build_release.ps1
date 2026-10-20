@@ -36,7 +36,7 @@ foreach ($f in $binaries) {
 }
 Write-Host "Podpisy OK ($($binaries.Count) suborov)"
 
-Copy-Item (Join-Path $root "airdrop.py"), (Join-Path $root "index.html"), (Join-Path $root "start.bat"),
+Copy-Item (Join-Path $root "airdrop.py"), (Join-Path $root "index.html"), (Join-Path $root "qrcode.min.js"), (Join-Path $root "start.bat"),
           (Join-Path $root "README.md"), (Join-Path $root "README_SK.md") -Destination $stage
 
 if (Test-Path $zip) { Remove-Item $zip }

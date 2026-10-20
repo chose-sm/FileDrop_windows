@@ -182,7 +182,7 @@
 </main>
 <div id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/qrcode.min.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -225,7 +225,8 @@
       inEmpty: 'Zatiaľ nič neprišlo.',
       phoneEmpty: 'Zatiaľ nič. Na PC pretiahni súbory do okna AirDrop.',
       confirmClear: 'Odstrániť všetky súbory pripravené pre iPhone?',
-      qrOffline: 'QR kód sa nenačítal (PC je offline). Opíš adresu nižšie do Safari na iPhone.',
+      qrOffline: 'QR kód sa nepodarilo zobraziť. Opíš adresu nižšie do Safari na iPhone.',
+      revealed: 'Spustiteľný súbor – z bezpečnostných dôvodov je len označený v priečinku.',
       received: name => 'Prijaté: ' + name,
       receivedCount: n => `Prijatých súborov: ${n}`,
       thisPc: 'Tento počítač',
@@ -265,7 +266,8 @@
       inEmpty: 'Nothing received yet.',
       phoneEmpty: 'Nothing yet. On the PC, drop files into the AirDrop window.',
       confirmClear: 'Remove all files ready for the iPhone?',
-      qrOffline: 'The QR code could not load (the PC is offline). Type the address below into Safari on the iPhone.',
+      qrOffline: 'The QR code could not be shown. Type the address below into Safari on the iPhone.',
+      revealed: 'Executable file – for safety it is only highlighted in its folder.',
       received: name => 'Received: ' + name,
       receivedCount: n => `Files received: ${n}`,
       thisPc: 'This PC',
@@ -325,7 +327,7 @@
     kids.flat().forEach(c => c != null && e.append(c));
     return e;
   }
-  const post = url => fetch(withKey(url), { method: 'POST' });
+  const post = url => fetch(withKey(url), { method: 'POST', headers: { 'X-AirDrop': '1' } });
 
   function thumb(box, f) {
     const ext = (f.name.split('.').pop() || '').slice(0, 4);
@@ -382,6 +384,7 @@
       const x = new XMLHttpRequest();
       const started = Date.now();
       x.open('POST', withKey('/api/upload?name=' + encodeURIComponent(file.name) + '&mtime=' + (file.lastModified || '')));
+      x.setRequestHeader('X-AirDrop', '1');
       x.upload.onprogress = e => {
         if (!e.lengthComputable) return;
         const pct = e.loaded / e.total * 100, secs = (Date.now() - started) / 1000;
@@ -451,8 +454,10 @@
         await post(`/api/delete?box=outbox&name=${encodeURIComponent(f.name)}`); refresh();
       } } }, t('remove'))]);
     renderList($('inList'), 'inbox', state.inbox, t('inEmpty'), f => [
-      el('button', { className: 'btn ghost', on: { click: () =>
-        post(`/api/open?box=inbox&name=${encodeURIComponent(f.name)}`) } }, t('open'))]);
+      el('button', { className: 'btn ghost', on: { click: async () => {
+        const r = await post(`/api/open?box=inbox&name=${encodeURIComponent(f.name)}`);
+        if (r.ok && (await r.json()).revealed) toast(t('revealed'));
+      } } }, t('open'))]);
 
     const names = new Set(state.inbox.map(f => f.name));
     if (knownInbox) {

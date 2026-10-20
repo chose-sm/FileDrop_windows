@@ -46,6 +46,12 @@ Restart AirDrop. The folder is created automatically if it doesn't exist.
 
 Access is protected by a random key contained in the QR code and stored in the `.token` file inside the AirDrop folder. If you delete it, a new key is generated and the old link stops working. Transfers are unencrypted HTTP within your local network, so use it only at home or on a trusted Wi-Fi.
 
+Other protections:
+- Websites open in your PC browser cannot control AirDrop (protection against CSRF and DNS rebinding).
+- Files received from the phone are marked as downloaded from the internet, so Windows warns before opening them. Executable files (`.exe`, `.bat`, `.ps1`, …) are never launched by the **Open** button; they are only highlighted in File Explorer.
+- Transferred files are served in a sandbox, so an HTML or SVG file cannot run scripts inside the app.
+- All parts of the app, including the QR code library, are bundled locally; nothing is loaded from the internet.
+
 ## Troubleshooting
 
 - **The iPhone can't connect:** both devices must be on the same Wi-Fi, and the network in Windows must be set to *Private*. You can also add the firewall rule manually (PowerShell as administrator):

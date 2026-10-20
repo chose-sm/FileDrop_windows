@@ -1,4 +1,4 @@
-# Zostavi prenosny balik AirDrop s priloženym Pythonom (netreba ho instalovat).
+# Zostavi prenosny balik FileDrop s priloženym Pythonom (netreba ho instalovat).
 # Pouzitie:  powershell -ExecutionPolicy Bypass -File build_release.ps1 -Version 1.0.0
 param(
     [string]$Version = "1.0.0",
@@ -8,9 +8,9 @@ $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $dist = Join-Path $root "dist"
 $cache = Join-Path $dist "cache"
-$name = "AirDrop-Windows-v$Version"
+$name = "FileDrop-Windows-v$Version"
 $stage = Join-Path $dist $name
-$zip = Join-Path $dist "AirDrop-Windows.zip"  # stabilny nazov -> odkaz releases/latest/download/AirDrop-Windows.zip
+$zip = Join-Path $dist "FileDrop-Windows.zip"  # stabilny nazov -> odkaz releases/latest/download/FileDrop-Windows.zip
 
 New-Item -ItemType Directory -Force $cache | Out-Null
 $pyZip = Join-Path $cache "python-$PythonVersion-embed-amd64.zip"
@@ -36,8 +36,9 @@ foreach ($f in $binaries) {
 }
 Write-Host "Podpisy OK ($($binaries.Count) suborov)"
 
-Copy-Item (Join-Path $root "airdrop.py"), (Join-Path $root "index.html"), (Join-Path $root "qrcode.min.js"), (Join-Path $root "start.bat"),
-          (Join-Path $root "README.md"), (Join-Path $root "README_SK.md") -Destination $stage
+Copy-Item (Join-Path $root "filedrop.py"), (Join-Path $root "index.html"), (Join-Path $root "qrcode.min.js"), (Join-Path $root "start.bat"),
+          (Join-Path $root "README.md"), (Join-Path $root "README_SK.md"),
+          (Join-Path $root "LICENSE"), (Join-Path $root "THIRD_PARTY_NOTICES.md") -Destination $stage
 
 if (Test-Path $zip) { Remove-Item $zip }
 # tar.exe (sucast Windows 10/11) - Compress-Archive v PS 5.1 zapisuje cesty so spatnymi lomkami

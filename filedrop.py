@@ -1,6 +1,6 @@
-"""AirDrop pre Windows - prenos suborov medzi PC a iPhonom cez lokalnu siet.
+"""FileDrop pre Windows - prenos suborov medzi PC a iPhonom cez lokalnu siet.
 
-Spusti:  python airdrop.py   (alebo dvojklik na start.bat)
+Spusti:  python filedrop.py   (alebo dvojklik na start.bat)
 Na PC sa otvori prehliadac s QR kodom, iPhone ho naskenuje fotoaparatom.
 """
 import http.cookies
@@ -19,20 +19,24 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-PORT = int(os.environ.get("AIRDROP_PORT", "8765"))
+# Nazvy AIRDROP_* / airdrop_folder.txt / Downloads\AirDrop su z verzii 1.x a stale funguju.
+PORT = int(os.environ.get("FILEDROP_PORT") or os.environ.get("AIRDROP_PORT") or "8765")
 BASE = Path(__file__).resolve().parent
+DEFAULT_DIR = Path.home() / "Downloads" / "FileDrop"
+LEGACY_DIR = Path.home() / "Downloads" / "AirDrop"
 
 
 def data_dir():
-    """Priecinok so subormi: AIRDROP_DIR, potom airdrop_folder.txt, inak Stiahnute\\AirDrop."""
-    if os.environ.get("AIRDROP_DIR"):
-        return Path(os.environ["AIRDROP_DIR"])
-    cfg = BASE / "airdrop_folder.txt"
-    if cfg.exists():
-        line = cfg.read_text(encoding="utf-8-sig").strip().strip('"')
-        if line:
-            return Path(os.path.expandvars(line))
-    return Path.home() / "Downloads" / "AirDrop"
+    """Priecinok so subormi: FILEDROP_DIR, potom filedrop_folder.txt, inak Stiahnute\\FileDrop."""
+    env = os.environ.get("FILEDROP_DIR") or os.environ.get("AIRDROP_DIR")
+    if env:
+        return Path(env)
+    for cfg in (BASE / "filedrop_folder.txt", BASE / "airdrop_folder.txt"):
+        if cfg.exists():
+            line = cfg.read_text(encoding="utf-8-sig").strip().strip('"')
+            if line:
+                return Path(os.path.expandvars(line))
+    return DEFAULT_DIR
 
 
 DATA = data_dir()
@@ -137,7 +141,7 @@ def resolve(box, name):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "AirDropWin/1.1"
+    server_version = "FileDrop/1.2"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
@@ -166,7 +170,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def post_allowed(self):
         """Ochrana pred CSRF: cudzia stranka nemoze poslat vlastnu hlavicku bez CORS, ktory server nepovoluje."""
-        if self.headers.get("X-AirDrop") != "1":
+        if self.headers.get("X-FileDrop") != "1":
             return False
         origin = self.headers.get("Origin")
         return origin is None or urllib.parse.urlsplit(origin).netloc == self.headers.get("Host", "")
@@ -344,6 +348,8 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     global TOKEN
+    if DATA == DEFAULT_DIR and not DATA.exists() and LEGACY_DIR.is_dir():
+        LEGACY_DIR.rename(DATA)  # presun z verzie 1.x
     old_outbox = DATA / "Na iPhone"  # nazov z predchadzajucej verzie
     if old_outbox.is_dir() and not BOXES["outbox"].exists():
         old_outbox.rename(BOXES["outbox"])
@@ -352,7 +358,7 @@ def main():
             folder.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         print(f"Priečinok {DATA} sa nedá vytvoriť / Cannot create folder: {e}")
-        print("Skontroluj airdrop_folder.txt / Check airdrop_folder.txt")
+        print("Skontroluj filedrop_folder.txt / Check filedrop_folder.txt")
         return
     for stale in DATA.glob("*/.*.part"):
         stale.unlink(missing_ok=True)
@@ -360,11 +366,11 @@ def main():
     try:
         srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     except OSError:
-        print(f"Port {PORT} je obsadený - AirDrop už pravdepodobne beží.")
+        print(f"Port {PORT} je obsadený - FileDrop už pravdepodobne beží.")
         webbrowser.open(f"http://localhost:{PORT}/")
         return
     srv.daemon_threads = True
-    print("AirDrop pre Windows beží.")
+    print("FileDrop pre Windows beží.")
     print(f"  Priečinok: {DATA}")
     for ip in lan_ips():
         print(f"  Adresa pre iPhone: http://{ip}:{PORT}/?k={TOKEN}")

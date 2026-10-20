@@ -3,3 +3,4 @@ __pycache__/
 .claude/
 dist/
 airdrop_folder.txt
+filedrop_folder.txt

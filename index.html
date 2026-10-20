@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="AirDrop PC">
+<meta name="apple-mobile-web-app-title" content="FileDrop">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<title>AirDrop</title>
+<title>FileDrop</title>
 <style>
   :root {
     --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --muted: #8e8e93;
@@ -101,16 +101,15 @@
 <main>
   <header>
     <svg viewBox="0 0 40 40" aria-hidden="true">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ac8fa"/><stop offset="1" stop-color="#0a84ff"/></linearGradient></defs>
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#30c48d"/><stop offset="1" stop-color="#0a84ff"/></linearGradient></defs>
       <rect width="40" height="40" rx="10" fill="url(#g)"/>
-      <g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
-        <path d="M12.5 26a10 10 0 1 1 15 0"/><path d="M15.6 23.2a6 6 0 1 1 8.8 0"/>
+      <g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 28V12M10 17l5-5 5 5"/><path d="M25 12v16M20 23l5 5 5-5"/>
       </g>
-      <path d="M20 19.5l5 9h-10z" fill="#fff"/>
     </svg>
     <div>
       <div class="titleRow">
-        <h1>AirDrop</h1>
+        <h1>FileDrop</h1>
         <label class="lang" title="Language">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>
@@ -198,7 +197,7 @@
       scanTitle: 'Naskenuj iPhonom',
       scanSub: 'Otvor Fotoaparát, namier na kód a ťukni na odkaz. iPhone musí byť na rovnakej Wi-Fi.',
       netIface: 'Sieťové rozhranie',
-      homeTip: 'Tip: na iPhone v Safari daj <b>Zdieľať → Pridať na plochu</b> a budeš mať AirDrop ako aplikáciu.',
+      homeTip: 'Tip: na iPhone v Safari daj <b>Zdieľať → Pridať na plochu</b> a budeš mať FileDrop ako aplikáciu.',
       sendToIphone: 'Poslať do iPhonu',
       dropTitle: 'Pretiahni sem súbory',
       dropSub: 'alebo klikni a vyber · funguje aj Ctrl+V',
@@ -207,7 +206,7 @@
       receivedFromIphone: 'Prijaté z iPhonu',
       openFolder: 'Otvoriť priečinok',
       sendToPc: 'Poslať do PC',
-      phoneHint: 'Vyber fotky, videá alebo súbory. Uložia sa do priečinka AirDrop v PC.',
+      phoneHint: 'Vyber fotky, videá alebo súbory. Uložia sa do priečinka FileDrop v PC.',
       fromPc: 'Z počítača',
       phoneSaveHint: 'Fotku alebo video ulož do Fotiek: ťukni na <b>Otvoriť</b>, podrž prst na obrázku a zvoľ <b>Pridať do Fotiek</b>. Ostatné súbory sa cez <b>Stiahnuť</b> uložia do aplikácie Súbory.',
       today: 'dnes',
@@ -223,7 +222,7 @@
       download: 'Stiahnuť',
       outEmpty: 'Nič tu nie je. Pretiahni súbory vyššie.',
       inEmpty: 'Zatiaľ nič neprišlo.',
-      phoneEmpty: 'Zatiaľ nič. Na PC pretiahni súbory do okna AirDrop.',
+      phoneEmpty: 'Zatiaľ nič. Na PC pretiahni súbory do okna FileDrop.',
       confirmClear: 'Odstrániť všetky súbory pripravené pre iPhone?',
       qrOffline: 'QR kód sa nepodarilo zobraziť. Opíš adresu nižšie do Safari na iPhone.',
       revealed: 'Spustiteľný súbor – z bezpečnostných dôvodov je len označený v priečinku.',
@@ -231,7 +230,7 @@
       receivedCount: n => `Prijatých súborov: ${n}`,
       thisPc: 'Tento počítač',
       connected: 'Pripojené k PC',
-      offline: 'Spojenie s PC prerušené – je AirDrop spustený?',
+      offline: 'Spojenie s PC prerušené – je FileDrop spustený?',
     },
     en: {
       locale: 'en-GB',
@@ -239,7 +238,7 @@
       scanTitle: 'Scan with your iPhone',
       scanSub: 'Open the Camera, point it at the code and tap the link. The iPhone must be on the same Wi-Fi.',
       netIface: 'Network interface',
-      homeTip: 'Tip: in Safari on the iPhone, tap <b>Share → Add to Home Screen</b> to use AirDrop like an app.',
+      homeTip: 'Tip: in Safari on the iPhone, tap <b>Share → Add to Home Screen</b> to use FileDrop like an app.',
       sendToIphone: 'Send to iPhone',
       dropTitle: 'Drop files here',
       dropSub: 'or click to choose · Ctrl+V works too',
@@ -248,7 +247,7 @@
       receivedFromIphone: 'Received from iPhone',
       openFolder: 'Open folder',
       sendToPc: 'Send to PC',
-      phoneHint: 'Pick photos, videos or files. They are saved to the AirDrop folder on the PC.',
+      phoneHint: 'Pick photos, videos or files. They are saved to the FileDrop folder on the PC.',
       fromPc: 'From the PC',
       phoneSaveHint: 'To save a photo or video to Photos, tap <b>Open</b>, press and hold the image and choose <b>Add to Photos</b>. Other files are saved to the Files app via <b>Download</b>.',
       today: 'today',
@@ -264,7 +263,7 @@
       download: 'Download',
       outEmpty: 'Nothing here yet. Drop files above.',
       inEmpty: 'Nothing received yet.',
-      phoneEmpty: 'Nothing yet. On the PC, drop files into the AirDrop window.',
+      phoneEmpty: 'Nothing yet. On the PC, drop files into the FileDrop window.',
       confirmClear: 'Remove all files ready for the iPhone?',
       qrOffline: 'The QR code could not be shown. Type the address below into Safari on the iPhone.',
       revealed: 'Executable file – for safety it is only highlighted in its folder.',
@@ -272,11 +271,14 @@
       receivedCount: n => `Files received: ${n}`,
       thisPc: 'This PC',
       connected: 'Connected to PC',
-      offline: 'Lost connection to the PC – is AirDrop running?',
+      offline: 'Lost connection to the PC – is FileDrop running?',
     },
   };
   function loadLang() {
-    try { const s = localStorage.getItem('airdrop-lang'); if (STRINGS[s]) return s; } catch {}
+    try {
+      const s = localStorage.getItem('filedrop-lang') || localStorage.getItem('airdrop-lang');
+      if (STRINGS[s]) return s;
+    } catch {}
     return /^(sk|cs)\b/i.test(navigator.language || '') ? 'sk' : 'en';
   }
   let lang = loadLang();
@@ -291,7 +293,7 @@
   }
   $('lang').onchange = e => {
     lang = e.target.value;
-    try { localStorage.setItem('airdrop-lang', lang); } catch {}
+    try { localStorage.setItem('filedrop-lang', lang); } catch {}
     applyLang();
     if (state) {
       if (state.local && !window.QRCode) drawQr();
@@ -327,7 +329,7 @@
     kids.flat().forEach(c => c != null && e.append(c));
     return e;
   }
-  const post = url => fetch(withKey(url), { method: 'POST', headers: { 'X-AirDrop': '1' } });
+  const post = url => fetch(withKey(url), { method: 'POST', headers: { 'X-FileDrop': '1' } });
 
   function thumb(box, f) {
     const ext = (f.name.split('.').pop() || '').slice(0, 4);
@@ -384,7 +386,7 @@
       const x = new XMLHttpRequest();
       const started = Date.now();
       x.open('POST', withKey('/api/upload?name=' + encodeURIComponent(file.name) + '&mtime=' + (file.lastModified || '')));
-      x.setRequestHeader('X-AirDrop', '1');
+      x.setRequestHeader('X-FileDrop', '1');
       x.upload.onprogress = e => {
         if (!e.lengthComputable) return;
         const pct = e.loaded / e.total * 100, secs = (Date.now() - started) / 1000;
